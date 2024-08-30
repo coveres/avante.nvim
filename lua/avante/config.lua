@@ -171,18 +171,14 @@ function M.setup(opts)
   M.options = vim.tbl_deep_extend(
     "force",
     M.defaults,
-    opts or {},
-    ---@type avante.Config
-    {
-      behaviour = {
-        support_paste_from_clipboard = M.support_paste_image(),
-      },
-    }
+    opts or {}
   )
   if not M.options.silent_warning then
     -- set silent_warning to true if debug is false
     M.options.silent_warning = not M.options.debug
   end
+
+  M.options.behaviour.support_paste_from_clipboard = M.support_paste_image()
 
   M.diff = vim.tbl_deep_extend(
     "force",

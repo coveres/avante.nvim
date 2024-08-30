@@ -155,6 +155,37 @@ H.autocmds = function()
   vim.treesitter.language.register("markdown", "Avante")
 end
 
+H.overrides = function()
+  local Clipboard = require("avante.clipboard")
+
+  if Config.support_paste_image() then
+    vim.paste = (function(overriden)
+      ---@param lines string[]
+      ---@param phase -1|1|2|3
+      return function(lines, phase)
+        local bufnr = vim.api.nvim_get_current_buf()
+        local filetype = vim.api.nvim_get_option_value("filetype", { buf = bufnr })
+        if filetype ~= "AvanteInput" then
+          return overriden(lines, phase)
+        end
+
+        ---@type string
+        local line = lines[1]
+
+        local ok = Clipboard.paste_image(line)
+        if not ok then
+          return overriden(lines, phase)
+        end
+
+        -- After pasting, insert a new line and set cursor to this line
+        vim.api.nvim_buf_set_lines(bufnr, -1, -1, false, { "" })
+        local last_line = vim.api.nvim_buf_line_count(bufnr)
+        vim.api.nvim_win_set_cursor(0, { last_line, 0 })
+      end
+    end)(vim.paste)
+  end
+end
+
 ---@param current boolean? false to disable setting current, otherwise use this to track across tabs.
 ---@return avante.Sidebar, avante.Selection
 function M._get(current)
@@ -269,7 +300,7 @@ function M.setup(opts)
     vim.api.nvim_echo({
       { "Avante requires at least nvim-0.10", "ErrorMsg" },
       { "Please upgrade your neovim version", "WarningMsg" },
-      { "Press any key to exit", "ErrorMsg" },
+      { "Press any key to exit",              "ErrorMsg" },
     }, true, {})
     vim.fn.getchar()
     vim.cmd([[quit]])
@@ -294,6 +325,7 @@ function M.setup(opts)
   H.commands()
   H.keymaps()
   H.signs()
+  H.overrides()
 
   M.did_setup = true
 end
